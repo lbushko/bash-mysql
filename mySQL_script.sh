@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 #./mysql.sh -p ${path} -d${database name} -t{timeout in seconds}
-trap "echo Sorry. You have aborted execution of a shell script" INT
-
-while getopts p:d:t option
-do
- case "${option}"
- in
- p) PATH=${OPTARG};; #localhost
- d) DB=${OPTARG};; #DB name
- t) TIME=${OPTARG};; #timeout
+#trap "echo Sorry. You have aborted execution of a shell script" INT
+while getopts ":p:d:t:" option; do
+ case ${option} in
+    p) 
+    PATH=${OPTARG}
+    echo $PATH
+    ;; #localhost
+    d) DB=${OPTARG};; #DB name
+    t) TIME=${OPTARG};; #timeout
  esac
 done
 
@@ -22,7 +22,7 @@ then
     TIME=60
 fi
 
-mysql -h localhost -u USERNAME -p
+mysql -h $PATH -u lyubomyr -p
 # To check if provided DB exists on MYSQL:
 
 COUNTER=0;
@@ -37,7 +37,7 @@ while [ $COUNTER - lt TIME ]; do
         else
             echo "YOUR $DB DOES NOT EXIST" #it should be commented
         fi
-    COUNTER = $COUNTER + $INTERVAL
+    $COUNTER = $COUNTER + $INTERVAL
     sleep $INTERVAL
 done
 
