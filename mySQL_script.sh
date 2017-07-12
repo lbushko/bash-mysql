@@ -1,20 +1,22 @@
-#!/usr/bin/env bash
-#./mysql.sh -p ${path} -d${database name} -t{timeout in seconds}
-#trap "echo Sorry. You have aborted execution of a shell script" INT
-while getopts ":p:d:t:" option; do
- case ${option} in
-    p) 
-    PATH=${OPTARG}
-    echo $PATH
-    ;; #localhost
+#!/bin/bash
+export PATH=$PATH:/usr/local/mysql/bin/
+#./mysql.sh -h ${HOST} -d${DB NAME} -t{timeout in seconds} -u{USER NAME} - p{PASSWORD}
+trap "The execution of mysql_script has ended...." exit
+
+while getopts "h:d:t:u:p:" option; do
+ case $option in
+    h) HOST=${OPTARG};;
     d) DB=${OPTARG};; #DB name
     t) TIME=${OPTARG};; #timeout
+    u) USER=${OPTARG};;
+    p) PASSWORD=${OPTARG};;
  esac
 done
 
-if [[ -z $PATH ]]
+if [[ -z $HOST ]]
 then
-    return
+    echo 'Error: pls provide HOST with -h flag, example -h localhost'
+    exit
 fi
 
 if [[ -z $TIME ]]
@@ -22,23 +24,29 @@ then
     TIME=60
 fi
 
-mysql -h $PATH -u lyubomyr -p
-# To check if provided DB exists on MYSQL:
+if [[ -z $USER ]]
+then
+    USER='root'
+fi
 
 COUNTER=0;
 INTERVAL=5;
-while [ $COUNTER - lt TIME ]; do
-    if [[ ! -z "`mysql -qfsBe "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME='$DB'" 2>&1`" ]];
-        then
-            echo "YOUR $DB DATABASE EXISTS"
-            mysql -e "SELECT VERSION();"
-            mysql -e 'show databases;'
-            return
-        else
-            echo "YOUR $DB DOES NOT EXIST" #it should be commented
-        fi
-    $COUNTER = $COUNTER + $INTERVAL
-    sleep $INTERVAL
-done
 
-return
+while [ $COUNTER -lt $TIME ]; do
+
+RESULT=`mysqlshow -h $HOST -u $USER -p$PASSWORD $DB| grep -v Wildcard | grep -o $DB`
+
+ if [ "$RESULT" == "$DB" ]; then
+    echo 'YOUR DATABESE: "'$DB'" DATABASE EXISTS'
+    mysql -h $HOST -u $USER -p$PASSWORD -e 'SELECT VERSION();'
+    mysql -h $HOST -u $USER -p$PASSWORD -e 'show databases;'
+    exit
+ else
+    echo 'YOUR DATABESE: "'$DB'" DOES NOT EXIST'
+    echo 'Next try in '$INTERVAL' sec... pls wait!'
+ fi
+    COUNTER=$(($COUNTER+$INTERVAL))
+    sleep $INTERVAL
+    echo $COUNTER ' >> Executing.....'
+done    
+exit
